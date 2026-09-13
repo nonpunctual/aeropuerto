@@ -180,7 +180,7 @@ func wdutilFields() -> [String: Any] {
     return fields
 }
 
-func interfaceJSON(_ interface: CWInterface, includeWdutil: Bool) -> [String: Any] {
+func interfaceJSON(_ interface: CWInterface, wdutil: [String: Any]?) -> [String: Any] {
     var json: [String: Any] = [:]
 
     json["interfaceName"] = jsonOptional(interface.interfaceName)
@@ -224,8 +224,8 @@ func interfaceJSON(_ interface: CWInterface, includeWdutil: Bool) -> [String: An
         json["configuration"] = NSNull()
     }
 
-    if includeWdutil {
-        for (k, v) in wdutilFields() { json[k] = v }
+    if let wdutil = wdutil {
+        for (k, v) in wdutil { json[k] = v }
     }
 
     return json
@@ -263,6 +263,21 @@ func printJSON(_ object: Any) {
 
 let arguments = CommandLine.arguments
 let isRoot = geteuid() == 0
+
+// wdutil is the only thing that actually needs root. CoreWLAN/Location Services
+// authorization is tied to the console user who was granted it, not to root,
+// confirmed 2026-09-13: `sudo aeropuerto -I` returned real wdutil fields but null
+// ssid/bssid/countryCode, even with an active grant for the console user. So:
+// capture wdutil now, while still root, then drop back to the original invoking
+// user (via SUDO_UID, set by sudo) before touching anything CoreWLAN/CoreLocation.
+let wdutilData: [String: Any]? = isRoot ? wdutilFields() : nil
+
+if isRoot, let sudoUidString = ProcessInfo.processInfo.environment["SUDO_UID"],
+   let sudoUid = uid_t(sudoUidString) {
+    if seteuid(sudoUid) != 0 {
+        FileHandle.standardError.write("aeropuerto: failed to drop root privileges (seteuid), Location Services fields will likely be redacted\n".data(using: .utf8)!)
+    }
+}
 
 var parsedMode: String? = nil
 var interfaceName: String? = nil
@@ -326,7 +341,7 @@ case "-I":
     } else {
         interfaces = client.interfaces() ?? []
     }
-    let result = interfaces.map { interfaceJSON($0, includeWdutil: isRoot) }
+    let result = interfaces.map { interfaceJSON($0, wdutil: wdutilData) }
     printJSON(result)
 
 case "-s":
