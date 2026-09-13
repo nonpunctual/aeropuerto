@@ -4,3 +4,4 @@ payload/
 *.pkg
 .DS_Store
 aeropuerto.md
+.claude/
