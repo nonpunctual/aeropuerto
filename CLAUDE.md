@@ -41,10 +41,11 @@ Standard workflow, every time:
 3. `swift build` - confirms it compiles.
 4. `./build.sh` - rebuilds the signed `.app` bundle and syncs `payload/`.
 5. `/Users/Shared/scripty-legacy/build.pkg.sh --distribution distribution.xml payload Resources Scripts aeropuerto-<version> com.nonpunctual.aeropuerto <version> "" "" com.nonpunctual.aeropuerto "" component-plist.plist Sources/aeropuerto/aeropuerto.entitlements` - builds, signs, and notarizes `aeropuerto-<version>.pkg` (see the script's own header comments if the positional-arg order ever needs rechecking). **The trailing `aeropuerto.entitlements` argument is required**: `build.pkg.sh` re-signs every `.app` in `payload/` during packaging, and without this argument that re-sign silently drops the Location Services entitlement even though `build.sh`'s own signing had it (confirmed 2026-09-13: v3.0-v3.2 all shipped without it this way). After packaging, verify the actual shipped artifact, not `aeropuerto.app`: `codesign -d --entitlements - payload/Applications/Utilities/aeropuerto.app` must show `com.apple.security.personal-information.location`.
-6. Commit the version bump as `Bump to <version>`.
-7. `git tag v<version>` on that commit.
-8. Push the commit(s) and the tag.
-9. `gh release create v<version> aeropuerto-<version>.pkg --title "aeropuerto <version>" --notes "..."`.
-10. Delete the previous version's release and tag (`gh release delete vPREV --yes --cleanup-tag`).
+6. Stop here. Brock inspects the built `aeropuerto-<version>.pkg` locally before anything gets tagged, pushed, or released. Do not proceed to the remaining steps until he confirms.
+7. Commit the version bump as `Bump to <version>`.
+8. `git tag v<version>` on that commit.
+9. Push the commit(s) and the tag.
+10. `gh release create v<version> aeropuerto-<version>.pkg --title "aeropuerto <version>" --notes "..."`.
+11. Delete the previous version's release and tag (`gh release delete vPREV --yes --cleanup-tag`).
 
 The `.pkg` is never committed to git (`*.pkg`, `aeropuerto.app/`, and `payload/` are all gitignored). It only ever exists as a GitHub release asset and a transient local build artifact. Delete the local `.pkg` once it's uploaded. Only the newest version's release/tag/`.pkg` should exist, on GitHub and locally - git history is the record, not the releases list.
