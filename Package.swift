@@ -10,7 +10,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "aeropuerto",
-            exclude: ["Info.plist"],
+            exclude: ["Info.plist", "aeropuerto.entitlements"],
             linkerSettings: [
                 // Embeds an Info.plist section directly into the Mach-O binary so macOS's TCC
                 // daemon can find NSLocationUsageDescription for a bare command-line tool (no

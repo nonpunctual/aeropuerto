@@ -10,9 +10,21 @@ Project and codebase facts (naming, packaging conventions, release process) belo
 
 Never test unsigned or ad-hoc-signed builds against privacy-gated frameworks (Location Services/CoreLocation, or any other TCC-style consent). Never delete an app bundle or build directory that still has a live, unresolved Location Services/TCC reference.
 
-A properly signed app with a real Team ID and one stable, consistently `lsregister`ed identifier gets cleanly pruned by macOS from locationd's `clients.plist` once it's actually gone. Unsigned/ad-hoc-signed test builds and haphazard deletes don't resolve the same way, their references go orphaned instead. Brock had to manually clear 5 such orphaned entries in `/private/var/db/locationd/clients.plist`, which additionally required temporarily disabling SIP since normal (even root) writes to that file are blocked, traced to past ad-hoc test builds across two projects (`aeropuerto`, and a separate `TSP`-scoped `WifiScanTest`/`wifi-scanner` prototype) using inconsistent one-off identifiers.
+A properly signed app with a real Team ID and one stable, consistently `lsregister`ed identifier is expected to get pruned by macOS from locationd's `clients.plist` once it's actually gone, but this is not immediate: confirmed 2026-09-13, a properly Developer-ID-signed test app (`com.nonpunctual.locationtest`) was deleted from disk and its `clients.plist` entry (`Authorized => true`, `Registered => true`) was still present afterward, not yet pruned. Unsigned/ad-hoc-signed test builds and haphazard deletes are worse, their references go orphaned indefinitely instead of eventually resolving. Brock had to manually clear 5 such orphaned entries in `/private/var/db/locationd/clients.plist`, which additionally required temporarily disabling SIP since normal (even root) writes to that file are blocked, traced to past ad-hoc test builds across two projects (`aeropuerto`, and a separate `TSP`-scoped `WifiScanTest`/`wifi-scanner` prototype) using inconsistent one-off identifiers.
 
 Only exercise Location/Camera/Microphone/etc. permission flows against a properly signed build with a real Team ID and one stable identifier, registered via `lsregister` on every build (`build.sh` already does this correctly, don't add anything on top of it to force re-prompting). Disabling SIP to hand-edit `clients.plist` is a one-off manual cleanup, not something to script or repeat routinely.
+
+## Required entitlement for the Location Services prompt
+
+`build.sh` signs with Hardened Runtime (`codesign --options runtime`), required for notarization. A Hardened-Runtime-signed binary that calls `CLLocationManager.requestWhenInUseAuthorization()` without the `com.apple.security.personal-information.location` entitlement never shows the authorization prompt, no crash, no visible error. `locationd` silently refuses to forward the request to `CoreLocationAgent`, confirmed directly from its own log:
+
+```
+locationd: "Client has supported the hardened runtime but doesn't have the entitlement, not sending #AuthPrompt message to #CoreLocationAgent"
+```
+
+This is not App Sandbox (this app is Developer ID distributed, not sandboxed), it's a Hardened Runtime requirement specifically. Confirmed empirically (2026-09-12): a minimal throwaway test app (`com.nonpunctual.locationtest`), signed with the real Developer ID identity but no entitlements file, reproduced this exact silent failure on this Mac. Adding an `entitlements.plist` containing only `com.apple.security.personal-information.location` (true), and re-signing with `codesign --entitlements entitlements.plist`, made the prompt fire correctly and reproducibly (both via automated launch and a manual double-click).
+
+`build.sh` must add an entitlements file and pass `--entitlements` in its `codesign` call for `aeropuerto.app`, it currently does not.
 
 ## Working with Claude on this project
 

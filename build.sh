@@ -65,7 +65,14 @@ do
     plist_add "$key" string "$value"
 done
 
-if ! codesign --force --deep --options runtime --timestamp --sign "$signing_identity" aeropuerto.app
+# com.apple.security.personal-information.location is required alongside
+# --options runtime: without it, locationd silently refuses to forward the
+# Location Services auth prompt to CoreLocationAgent (confirmed via its own
+# log: "Client has supported the hardened runtime but doesn't have the
+# entitlement, not sending #AuthPrompt message to #CoreLocationAgent").
+# No crash, no visible error, the prompt just never appears. See aeropuerto.md's
+# "build log" section for how this was found.
+if ! codesign --force --deep --options runtime --entitlements Sources/aeropuerto/aeropuerto.entitlements --timestamp --sign "$signing_identity" aeropuerto.app
 then
     echo "build.sh: codesign failed" >&2; exit 1
 fi
