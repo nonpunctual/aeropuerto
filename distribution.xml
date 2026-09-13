@@ -12,5 +12,5 @@
     <choice id="com.nonpunctual.aeropuerto" visible="false">
         <pkg-ref id="com.nonpunctual.aeropuerto"/>
     </choice>
-    <pkg-ref id="com.nonpunctual.aeropuerto" version="3.0" onConclusion="none">component.pkg</pkg-ref>
+    <pkg-ref id="com.nonpunctual.aeropuerto" version="3.1" onConclusion="none">component.pkg</pkg-ref>
 </installer-gui-script>
