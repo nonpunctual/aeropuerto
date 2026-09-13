@@ -1,5 +1,37 @@
+import CoreLocation
 import CoreWLAN
 import Foundation
+
+final class LocationAuthorizer: NSObject, CLLocationManagerDelegate {
+    var latestStatus: CLAuthorizationStatus = .notDetermined
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        latestStatus = manager.authorizationStatus
+    }
+}
+
+// CWInterface/CWNetwork properties silently redact when unauthorized, they don't
+// themselves ask the user for authorization. Only CLLocationManager's authorization
+// request actually triggers locationd's #AuthPrompt flow (the modal). This must run
+// before any CoreWLAN access, or the prompt never fires (confirmed 2026-09-13: a
+// no-args launch reached CWWiFiClient/airportd but never touched locationd at all).
+func requestLocationAuthorizationIfNeeded() {
+    let manager = CLLocationManager()
+    let authorizer = LocationAuthorizer()
+    manager.delegate = authorizer
+    authorizer.latestStatus = manager.authorizationStatus
+
+    guard authorizer.latestStatus == .notDetermined else {
+        return
+    }
+
+    manager.requestWhenInUseAuthorization()
+
+    let deadline = Date().addingTimeInterval(60)
+    while authorizer.latestStatus == .notDetermined && Date() < deadline {
+        RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.2))
+    }
+}
 
 let usage = """
 Usage: aeropuerto -s [-interface <interface>]
@@ -232,7 +264,7 @@ func printJSON(_ object: Any) {
 let arguments = CommandLine.arguments
 let isRoot = geteuid() == 0
 
-var mode: String? = nil
+var parsedMode: String? = nil
 var interfaceName: String? = nil
 var index = 1
 var argError = false
@@ -244,8 +276,8 @@ while index < arguments.count {
         print(usage)
         exit(0)
     case "-s", "-I":
-        if mode != nil { argError = true }
-        mode = arg
+        if parsedMode != nil { argError = true }
+        parsedMode = arg
     case "-interface":
         index += 1
         if index < arguments.count {
@@ -264,10 +296,23 @@ if argError {
     exit(1)
 }
 
-guard let mode = mode else {
+// A GUI-style launch (Finder double-click, `open -a`, postinstall's auto-launch)
+// passes no arguments and has no controlling terminal. Per README.md: "The first
+// launch checks the current Wi-Fi interface." That CWWiFiClient call is what
+// actually triggers the Location Services authorization prompt, so a no-args
+// launch must reach it, not just print usage and exit, or the prompt never fires.
+// An interactive terminal invocation with no args still gets the usage text.
+let mode: String
+if let explicitMode = parsedMode {
+    mode = explicitMode
+} else if isatty(STDOUT_FILENO) != 0 {
     print(usage)
     exit(0)
+} else {
+    mode = "-I"
 }
+
+requestLocationAuthorizationIfNeeded()
 
 let client = CWWiFiClient.shared()
 
