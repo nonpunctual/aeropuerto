@@ -1,0 +1,48 @@
+#!/bin/sh
+# Installer postinstall script for aeropuerto.
+#
+# Runs as root during package installation. Two jobs:
+#   1. Symlink the CLI entry point into /usr/local/bin.
+#   2. Auto-launch the app once with -I so the Location Services consent
+#      prompt fires immediately, without the end user having to find and
+#      run the tool themselves. This is the only shot MDM/Fleet gets at
+#      surfacing the prompt - there's no fallback if it doesn't fire.
+#
+# $3 is the target volume the package is installing onto (usually "/").
+
+target_volume="$3"
+app_bundle="$target_volume/Applications/Utilities/aeropuerto.app"
+app_binary="$app_bundle/Contents/MacOS/aeropuerto"
+bin_dir="$target_volume/usr/local/bin"
+
+mkdir -p "$bin_dir"
+ln -sf "$app_binary" "$bin_dir/aeropuerto"
+
+# Location Services prompts only display (and register correctly) against the
+# logged-in console user's GUI session. This script runs as root, so it has
+# to hop into that session via launchctl asuser rather than launching the
+# app directly - a root-launched instance can't surface anything to the
+# person sitting at the keyboard.
+console_user=$(stat -f "%Su" /dev/console)
+
+case "$console_user" in
+    root|_mbsetupuser|loginwindow|"")
+        # No one is actually logged in (e.g. a deferred MDM install at the
+        # login window). Nothing to prompt - skip silently. The user can
+        # still grant access later via System Settings > Privacy & Security
+        # > Location Services, as documented in the README.
+        ;;
+    *)
+        # `open -a` (not a direct exec of the binary) is required: it's what
+        # asks LaunchServices to actually open/activate the app, which is
+        # what makes it the foreground app - confirmed via active.app.sh
+        # showing aeropuerto never once became the active app under a direct
+        # exec, and CLLocationManager's request only shows its prompt for an
+        # app that's actually in the foreground. open -a returns immediately
+        # once the app is launched, so this doesn't need to be backgrounded.
+        console_uid=$(stat -f "%u" /dev/console)
+        launchctl asuser "$console_uid" sudo -u "$console_user" open -a "$app_bundle"
+        ;;
+esac
+
+exit 0

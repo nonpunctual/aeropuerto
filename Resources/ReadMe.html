@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>aeropuerto</title>
+<style>
+  body {
+      font: 13px -apple-system, "Helvetica Neue", sans-serif;
+      color: #1d1d1f;
+      margin: 0;
+      padding: 0 1em;
+  }
+  h1 { font-size: 1.4em; margin-bottom: 0.2em; }
+  h2 { font-size: 1.1em; margin-top: 1.4em; margin-bottom: 0.3em; }
+  p { line-height: 1.4em; }
+  code, pre {
+      font: 12px Menlo, monospace;
+      background: #f2f2f2;
+      border-radius: 4px;
+  }
+  code { padding: 0.1em 0.3em; }
+  pre { padding: 0.6em; overflow-x: auto; }
+  img { max-width: 100%; }
+</style>
+</head>
+<body>
+
+<h1>aeropuerto</h1>
+
+<h2>What</h2>
+<p>
+<code>aeropuerto</code> is a well-intentioned tool designed to supply wireless network data for those who believe they need it.
+</p>
+<p>
+It reads nearby Wi-Fi network details (SSID, BSSID, signal strength) and the Mac's own current Wi-Fi association.
+</p>
+<p>
+User approval in macOS Location Services is required by Apple for any tool that performs a Wi-Fi scan.
+</p>
+
+<h2>Requirements</h2>
+<ul>
+  <li>macOS 12 or later</li>
+  <li>A Mac with Wi-Fi hardware</li>
+  <li>To collect all available attributes with <code>aeropuerto</code>, it must be executed as the root user or with <code>sudo</code></li>
+</ul>
+<p>
+<code>aeropuerto</code> uses <a href="https://developer.apple.com/documentation/corewlan">CoreWLAN</a>; <code>mcsIndex</code>, <code>guardInterval</code>, <code>spatialStreams</code>, <code>channelClearAssessment</code>, and <code>scanCacheCount</code> come from <code>wdutil</code>, which requires root. A plain, unprivileged <code>aeropuerto -I</code> never attempts this and these five fields are simply omitted; run with <code>sudo</code> to include them.
+</p>
+
+<h2>Install</h2>
+<p>
+Right after this installer finishes, the application will automatically launch. You should see a system prompt asking you to allow <code>aeropuerto</code> to use your location. Click "Allow" to enable it (SSID/SSID data/BSSID/country code stay redacted otherwise). The first launch checks the current Wi-Fi interface. It doesn't scan for nearby networks.
+</p>
+<p>
+<img src="aeropuerto.png" alt="The macOS Location Services authorization prompt">
+</p>
+<p>
+If you don't see the prompt, or want to grant access later, go to:
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;System Settings &gt; Privacy &amp; Security &gt; Location Services and enable <code>aeropuerto</code> there.
+</p>
+<p>
+After granting Location Services access to the application, it never has to be opened again. It can be used purely as a command-line (CLI) tool. This installer creates a symlink from the binary:
+</p>
+<p>
+&nbsp;&nbsp;<code>/Applications/Utilities/aeropuerto.app/Contents/MacOS/aeropuerto</code>
+</p>
+<p>
+to
+</p>
+<p>
+&nbsp;&nbsp;<code>/usr/local/bin/aeropuerto</code>
+</p>
+<p>
+meaning it can be called like any other CLI tool with just its name in Terminal.app, e.g.,
+</p>
+<p>
+&nbsp;&nbsp;<code>% aeropuerto</code>
+</p>
+
+<h2>Help</h2>
+<p>
+Running <code>aeropuerto</code> with no flags (or <code>-h</code>/<code>--help</code>) prints this usage message.
+</p>
+<pre>Usage: aeropuerto -s [-interface &lt;interface&gt;]
+       aeropuerto -I [-interface &lt;interface&gt;]
+
+  -s   Scan for nearby Wi-Fi networks, print a JSON array.
+  -I   Print CoreWLAN attributes as a JSON array: one object per Wi-Fi
+       interface present (on or off) by default, or just the named one
+       with -interface.
+  -interface &lt;interface&gt;
+       Target a specific Wi-Fi interface (e.g. en0) with -s or -I,
+       instead of -s's single default interface or -I's default of
+       every interface present.</pre>
+<p>
+The binary writes <code>JSON</code> to <code>stdout</code> so any of your favorite tools for parsing &amp; collecting the data should work.
+</p>
+<p>
+<code>aeropuerto -s</code> prints an array of nearby networks:
+</p>
+<pre>% aeropuerto -s | jq '[.[] | {ssid, bssid, channelNumber}]'
+[
+  {
+    "ssid": "Alice",
+    "bssid": "c1:42:d3:64:7a:df",
+    "channelNumber": 1
+  },
+  {
+    "ssid": "Bob",
+    "bssid": "a6:bf:c5:d5:ee:fa",
+    "channelNumber": 44
+  }
+]</pre>
+<p>
+<code>aeropuerto -I</code> prints a JSON array with one object per Wi-Fi interface present on the Mac (on or off), each describing that interface's own current association. Most Macs have exactly one Wi-Fi interface (<code>en0</code>), so the array normally has one element; a USB Wi-Fi adapter would add a second.
+</p>
+
+<h2>Why</h2>
+<p>
+If there is a reason not to use this application, or a reason this application should not exist, I guess someone will let me know. It is not meant to supply data to bad people with bad intentions for geolocating people's private home networks.
+</p>
+<p>
+Unfortunately, the cost of supplying this data to those with good intentions who think they need it may be the privacy of all wireless networks. Understanding that cost is important.
+</p>
+<p>
+With or without this application, war drivers can still swing by your house &amp; pick up what your access points are broadcasting. It's also important to understand that.
+</p>
+<p>
+Please forgive this philosophical discussion of what ideally should be a purely technical subject. Given the state of affairs (i.e., that Apple no longer believes this data should be made easily available or expressed on the device the way it has been for years) I thought it was necessary.
+</p>
+<p>
+Thanks &amp; please enjoy <code>aeropuerto</code>! Feel free to leave any comments or ideas via <a href="https://github.com/nonpunctual/aeropuerto/issues">Issues</a>.
+</p>
+<p>
+&copy; 2026 <a href="http://nonpunctual.org">nonpunctual.org</a> (Brock Walters)
+</p>
+
+</body>
+</html>

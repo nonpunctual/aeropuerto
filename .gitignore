@@ -1,0 +1,5 @@
+.build/
+aeropuerto.app/
+payload/
+*.pkg
+.DS_Store
