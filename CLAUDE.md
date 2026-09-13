@@ -40,7 +40,7 @@ Standard workflow, every time:
 2. Bump the version in `Sources/aeropuerto/Info.plist` (source of truth for `CFBundleVersion`/`CFBundleShortVersionString`) and `distribution.xml`'s `pkg-ref version`.
 3. `swift build` - confirms it compiles.
 4. `./build.sh` - rebuilds the signed `.app` bundle and syncs `payload/`.
-5. `/Users/Shared/scripty-legacy/build.pkg.sh --distribution distribution.xml payload Resources Scripts aeropuerto-<version> com.nonpunctual.aeropuerto <version> "" "" com.nonpunctual.aeropuerto "" component-plist.plist` - builds, signs, and notarizes `aeropuerto-<version>.pkg` (see the script's own header comments if the positional-arg order ever needs rechecking).
+5. `/Users/Shared/scripty-legacy/build.pkg.sh --distribution distribution.xml payload Resources Scripts aeropuerto-<version> com.nonpunctual.aeropuerto <version> "" "" com.nonpunctual.aeropuerto "" component-plist.plist Sources/aeropuerto/aeropuerto.entitlements` - builds, signs, and notarizes `aeropuerto-<version>.pkg` (see the script's own header comments if the positional-arg order ever needs rechecking). **The trailing `aeropuerto.entitlements` argument is required**: `build.pkg.sh` re-signs every `.app` in `payload/` during packaging, and without this argument that re-sign silently drops the Location Services entitlement even though `build.sh`'s own signing had it (confirmed 2026-09-13: v3.0-v3.2 all shipped without it this way). After packaging, verify the actual shipped artifact, not `aeropuerto.app`: `codesign -d --entitlements - payload/Applications/Utilities/aeropuerto.app` must show `com.apple.security.personal-information.location`.
 6. Commit the version bump as `Bump to <version>`.
 7. `git tag v<version>` on that commit.
 8. Push the commit(s) and the tag.
