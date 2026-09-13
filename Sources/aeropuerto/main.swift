@@ -1,3 +1,4 @@
+import Cocoa
 import CoreLocation
 import CoreWLAN
 import Foundation
@@ -318,55 +319,114 @@ if argError {
 // launch must reach it, not just print usage and exit, or the prompt never fires.
 // An interactive terminal invocation with no args still gets the usage text.
 let mode: String
+let isGUILaunch: Bool
 if let explicitMode = parsedMode {
     mode = explicitMode
+    isGUILaunch = false
 } else if isatty(STDOUT_FILENO) != 0 {
     print(usage)
     exit(0)
 } else {
     mode = "-I"
+    isGUILaunch = true
 }
 
-requestLocationAuthorizationIfNeeded()
+func performCoreWLANWork() {
+    let client = CWWiFiClient.shared()
 
-let client = CWWiFiClient.shared()
-
-switch mode {
-case "-I":
-    var interfaces: [CWInterface] = []
-    if let interfaceName = interfaceName {
-        if let interface = client.interface(withName: interfaceName) {
-            interfaces = [interface]
+    switch mode {
+    case "-I":
+        var interfaces: [CWInterface] = []
+        if let interfaceName = interfaceName {
+            if let interface = client.interface(withName: interfaceName) {
+                interfaces = [interface]
+            }
+        } else {
+            interfaces = client.interfaces() ?? []
         }
-    } else {
-        interfaces = client.interfaces() ?? []
-    }
-    let result = interfaces.map { interfaceJSON($0, wdutil: wdutilData) }
-    printJSON(result)
-
-case "-s":
-    let targetInterface: CWInterface?
-    if let interfaceName = interfaceName {
-        targetInterface = client.interface(withName: interfaceName)
-    } else {
-        targetInterface = client.interface()
-    }
-
-    guard let interface = targetInterface else {
-        FileHandle.standardError.write("aeropuerto: no Wi-Fi interface found\n".data(using: .utf8)!)
-        exit(1)
-    }
-
-    do {
-        let networks = try interface.scanForNetworks(withSSID: nil)
-        let result = networks.map { networkJSON($0) }
+        let result = interfaces.map { interfaceJSON($0, wdutil: wdutilData) }
         printJSON(result)
-    } catch {
-        FileHandle.standardError.write("aeropuerto: scan failed: \(error.localizedDescription)\n".data(using: .utf8)!)
-        exit(1)
+
+    case "-s":
+        let targetInterface: CWInterface?
+        if let interfaceName = interfaceName {
+            targetInterface = client.interface(withName: interfaceName)
+        } else {
+            targetInterface = client.interface()
+        }
+
+        guard let interface = targetInterface else {
+            FileHandle.standardError.write("aeropuerto: no Wi-Fi interface found\n".data(using: .utf8)!)
+            exit(1)
+        }
+
+        do {
+            let networks = try interface.scanForNetworks(withSSID: nil)
+            let result = networks.map { networkJSON($0) }
+            printJSON(result)
+        } catch {
+            FileHandle.standardError.write("aeropuerto: scan failed: \(error.localizedDescription)\n".data(using: .utf8)!)
+            exit(1)
+        }
+
+    default:
+        print(usage)
+        exit(0)
+    }
+}
+
+// This is a bare executable with no NSApplication/Cocoa event loop by default.
+// A Finder double-click sends a standard "Open Application" Apple Event and
+// waits for a reply; nothing answers it without a real run loop processing
+// events, and Finder's own watchdog can then show "not responding", even
+// though the process is alive and correctly waiting on the auth prompt underneath
+// (confirmed 2026-09-13 on a fresh VM). NSApp.run() on the main thread answers
+// Apple Events properly; NSApp.terminate(nil) ends the process once done.
+//
+// Everything here must stay on the main thread. requestLocationAuthorizationIfNeeded()'s
+// polling loop calls RunLoop.main.run(), which only does anything when called from
+// the main thread itself; calling it from a background thread (an earlier version of
+// this fix used DispatchQueue.global().async) is a silent no-op that just busy-spins
+// for the full timeout at 100% CPU, confirmed 2026-09-13 (measured ~60.19s against a
+// 60s deadline). The CLLocationManager delegate callback below is what NSApp's own
+// already-running main-thread loop delivers correctly, no manual polling needed here.
+final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
+    let locationManager = CLLocationManager()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        locationManager.delegate = self
+        if locationManager.authorizationStatus != .notDetermined {
+            finish()
+        } else {
+            locationManager.requestWhenInUseAuthorization()
+        }
     }
 
-default:
-    print(usage)
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        if manager.authorizationStatus != .notDetermined {
+            finish()
+        }
+    }
+
+    func finish() {
+        performCoreWLANWork()
+        NSApp.terminate(nil)
+    }
+}
+
+// Only the no-args GUI-style launch needs NSApplication (to answer Finder's
+// "Open Application" Apple Event and avoid "not responding"). Explicit -s/-I
+// CLI invocations never had that problem, and wrapping them in NSApplication
+// too was confirmed 2026-09-13 to add real latency for no benefit, unacceptable
+// for a CLI tool, so they keep the original direct, fast, main-thread path.
+if isGUILaunch {
+    let app = NSApplication.shared
+    app.setActivationPolicy(.accessory)
+    let appDelegate = AppDelegate()
+    app.delegate = appDelegate
+    app.run()
+} else {
+    requestLocationAuthorizationIfNeeded()
+    performCoreWLANWork()
     exit(0)
 }
