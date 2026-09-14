@@ -5,9 +5,9 @@
 	<key>CFBundleIdentifier</key>
 	<string>com.nonpunctual.aeropuerto</string>
 	<key>CFBundleVersion</key>
-	<string>3.3</string>
+	<string>3.4</string>
 	<key>CFBundleShortVersionString</key>
-	<string>3.3</string>
+	<string>3.4</string>
 	<key>NSLocationUsageDescription</key>
 	<string>aeropuerto reads nearby Wi-Fi network SSIDs, BSSIDs, and signal data. macOS requires Location Services authorization for any tool that performs a Wi-Fi scan.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
