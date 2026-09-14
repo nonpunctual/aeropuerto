@@ -201,6 +201,7 @@ func interfaceJSON(_ interface: CWInterface, wdutil: [String: Any]?) -> [String:
     json["hardwareAddress"] = jsonOptional(interface.hardwareAddress())
     json["activePHYMode"] = phyModeString(interface.activePHYMode())
     json["transmitRate"] = interface.transmitRate()
+    json["transmitPower"] = interface.transmitPower()
     json["countryCode"] = jsonOptional(interface.countryCode())
     json["interfaceMode"] = interfaceModeString(interface.interfaceMode())
 
@@ -220,7 +221,13 @@ func interfaceJSON(_ interface: CWInterface, wdutil: [String: Any]?) -> [String:
                 ])
             }
         }
-        json["configuration"] = ["networkProfiles": profiles]
+        json["configuration"] = [
+            "networkProfiles": profiles,
+            "rememberJoinedNetworks": configuration.rememberJoinedNetworks,
+            "requireAdministratorForAssociation": configuration.requireAdministratorForAssociation,
+            "requireAdministratorForPower": configuration.requireAdministratorForPower,
+            "requireAdministratorForIBSSMode": configuration.requireAdministratorForIBSSMode
+        ]
     } else {
         json["configuration"] = NSNull()
     }
