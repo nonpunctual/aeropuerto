@@ -107,6 +107,8 @@ Verizon_XYZ123
 Fios-9876
 ```
 
+Hidden networks (no broadcast SSID) show up as `"ssid": "hiddenNetwork"`.
+
 `aeropuerto -I` prints a JSON array with one object per Wi-Fi interface present on the Mac (on or off), each describing that interface's own current association. Most Macs have exactly one Wi-Fi interface (`en0`), so the array normally has one element; a USB Wi-Fi adapter would add a second.
 
 ```sh

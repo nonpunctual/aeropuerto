@@ -7,6 +7,7 @@
 - `aeropuerto -s` scans nearby Wi-Fi networks (SSID/BSSID/signal strength, JSON to stdout)
 - `aeropuerto -I` reports current Wi-Fi interface(s) association info (JSON to stdout)
 - `-interface <name>` targets one interface with either mode
+- `-v`/`--version` prints `CFBundleShortVersionString` from the `Info.plist` embedded in the binary's `__info_plist` section, exit 0 (confirmed via testing: app bundle, symlink, bare `.build/debug` binary)
 - `-interface <name>` naming a nonexistent/non-Wi-Fi interface, the two modes behave differently: for `-I`, empty JSON array, exit 0, not an error (confirmed via testing). For `-s`, `"no Wi-Fi interface found"` to stderr, exit 1 (confirmed by reading `main.swift`, not by testing).
 - invalid/conflicting flags (unrecognized flag, both -s and -I, -interface with no value): usage to stderr, exit 1 (confirmed via testing)
 - Will ship as a signed, notarized .app bundle
@@ -24,6 +25,7 @@
 - actual observed behavior on this system only confirms ssid and bssid using known CLI tools (see CoreWLAN's gated-field list below for the full documented set)
 - `sudo aeropuerto -I` additionally includes mcsIndex/guardInterval/spatialStreams/channelClearAssessment/scanCacheCount from `wdutil` (requires root). 
 - Unprivileged runs omit those five fields.
+- `-s` hidden networks: CoreWLAN returns nil `ssid`/`ssidData` with a real `bssid`. aeropuerto emits `"ssid": "hiddenNetwork"` (`ssidData` stays `null`). Without authorization `bssid` is nil too, so redacted results stay `null`, not mislabeled hidden. BSSIDs matched WiFi Explorer Pro's "Hidden Network" rows (confirmed 2026-11-03).
 
 "Redacted" = when the calling process lacks Location Services authorization, CoreWLAN's underlying property for that field returns a placeholder rather than the real value. Directly observed the display convention two system tools use for that placeholder, the literal string <redacted>, for ssid/bssid/networkID.
 

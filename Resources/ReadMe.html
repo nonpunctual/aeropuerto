@@ -118,6 +118,9 @@ The binary writes <code>JSON</code> to <code>stdout</code> so any of your favori
   }
 ]</pre>
 <p>
+Hidden networks (no broadcast SSID) show up as <code>"ssid": "hiddenNetwork"</code>.
+</p>
+<p>
 <code>aeropuerto -I</code> prints a JSON array with one object per Wi-Fi interface present on the Mac (on or off), each describing that interface's own current association. Most Macs have exactly one Wi-Fi interface (<code>en0</code>), so the array normally has one element; a USB Wi-Fi adapter would add a second.
 </p>
 
