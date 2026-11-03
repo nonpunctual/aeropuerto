@@ -241,7 +241,13 @@ func interfaceJSON(_ interface: CWInterface, wdutil: [String: Any]?) -> [String:
 
 func networkJSON(_ network: CWNetwork) -> [String: Any] {
     var json: [String: Any] = [:]
-    json["ssid"] = jsonOptional(network.ssid)
+    // Hidden networks come back with nil ssid/ssidData but a real bssid. Without
+    // Location Services authorization bssid is nil too, so that case stays null.
+    if network.ssid == nil && network.ssidData == nil && network.bssid != nil {
+        json["ssid"] = "hiddenNetwork"
+    } else {
+        json["ssid"] = jsonOptional(network.ssid)
+    }
     if let ssidData = network.ssidData {
         json["ssidData"] = ssidData.map { String(format: "%02x", $0) }.joined()
     } else {

@@ -1,7 +1,9 @@
+.DS_Store
+CLAUDE.md
+.claude/
+
 .build/
 aeropuerto.app/
 payload/
 *.pkg
-.DS_Store
-.claude/
-CLAUDE.md
+
