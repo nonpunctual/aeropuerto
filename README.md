@@ -20,7 +20,7 @@ User approval in macOS Location Services is required by Apple for any tool that 
 
 Download the signed, notarized `.pkg` from [Releases](https://github.com/nonpunctual/aeropuerto/releases) and run it.
 
-Right after the installer finishes, the application will automatically launch. You should see a system prompt asking you to allow `aeropuerto` to use your location. Click 'Allow' to enable it (SSID/SSID data/BSSID/country code stay redacted otherwise). The first launch checks the current Wi-Fi interface. It doesn't scan for nearby networks.
+Right after the installer finishes, the application will automatically launch. You should see a system prompt asking you to allow `aeropuerto` to use your location. Click 'Allow' to enable it (SSID/SSID data/BSSID/country code stay redacted otherwise). The first launch checks the current Wi-Fi interface. It doesn't scan for nearby networks. Upgrading over an existing install keeps the permission, so you should not be prompted again.
 
 ![The macOS Location Services authorization prompt](Resources/aeropuerto.png)
 

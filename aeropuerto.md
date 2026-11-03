@@ -174,6 +174,10 @@ Confirmed end-to-end for the real app: modal fires, "Allow" persists (`clients.p
 
 unredacted data confirmed from `-I`/`-s` after a `.pkg` upgrade-install (not a fresh machine).
 
+#### v3.6 upgrade-install confirmed
+
+2026-11-03: installed `aeropuerto-3.6.pkg` over 3.3. No Location Services prompt, `-s` returned real BSSIDs for every network. Same bundle ID and Developer ID team (`34GLTN3UJU`) across versions, so the existing grant should carry over.
+
 #### sudo losing the grant (previously solved, lost in an earlier rewrite)
 
 `sudo aeropuerto -I`: real `wdutil` fields, but `null` `ssid`/`bssid`/`countryCode`. Root cause: authorization is tied to the console user, not root. Fix: capture `wdutil` fields while still root, then `seteuid(SUDO_UID)` before touching CoreWLAN/CoreLocation. Confirmed: both real data and `wdutil` fields returned together.
