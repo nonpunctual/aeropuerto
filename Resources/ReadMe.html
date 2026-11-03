@@ -86,6 +86,7 @@ Running <code>aeropuerto</code> with no flags (or <code>-h</code>/<code>--help</
 </p>
 <pre>Usage: aeropuerto -s [-interface &lt;interface&gt;]
        aeropuerto -I [-interface &lt;interface&gt;]
+       aeropuerto -v
 
   -s   Scan for nearby Wi-Fi networks, print a JSON array.
   -I   Print CoreWLAN attributes as a JSON array: one object per Wi-Fi
@@ -94,7 +95,9 @@ Running <code>aeropuerto</code> with no flags (or <code>-h</code>/<code>--help</
   -interface &lt;interface&gt;
        Target a specific Wi-Fi interface (e.g. en0) with -s or -I,
        instead of -s's single default interface or -I's default of
-       every interface present.</pre>
+       every interface present.
+  -v, --version
+       Print the aeropuerto version.</pre>
 <p>
 The binary writes <code>JSON</code> to <code>stdout</code> so any of your favorite tools for parsing &amp; collecting the data should work.
 </p>
