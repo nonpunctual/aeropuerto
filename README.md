@@ -48,6 +48,7 @@ Running `aeropuerto` with no flags (or `-h`/`--help`) prints this usage message.
 ```
 Usage: aeropuerto -s [-interface <interface>]
        aeropuerto -I [-interface <interface>]
+       aeropuerto -v
 
   -s   Scan for nearby Wi-Fi networks, print a JSON array.
   -I   Print CoreWLAN attributes as a JSON array: one object per Wi-Fi
@@ -57,6 +58,8 @@ Usage: aeropuerto -s [-interface <interface>]
        Target a specific Wi-Fi interface (e.g. en0) with -s or -I,
        instead of -s's single default interface or -I's default of
        every interface present.
+  -v, --version
+       Print the aeropuerto version.
 ```
 
 The binary writes `JSON` to `stdout` so any of your favorite tools for parsing & collecting the data should work.

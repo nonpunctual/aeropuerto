@@ -37,6 +37,7 @@ func requestLocationAuthorizationIfNeeded() {
 let usage = """
 Usage: aeropuerto -s [-interface <interface>]
        aeropuerto -I [-interface <interface>]
+       aeropuerto -v
 
   -s   Scan for nearby Wi-Fi networks, print a JSON array.
   -I   Print CoreWLAN attributes as a JSON array: one object per Wi-Fi
@@ -46,6 +47,8 @@ Usage: aeropuerto -s [-interface <interface>]
        Target a specific Wi-Fi interface (e.g. en0) with -s or -I,
        instead of -s's single default interface or -I's default of
        every interface present.
+  -v, --version
+       Print the aeropuerto version.
 """
 
 func phyModeString(_ mode: CWPHYMode) -> String {
@@ -303,6 +306,10 @@ while index < arguments.count {
     switch arg {
     case "-h", "--help":
         print(usage)
+        exit(0)
+    case "-v", "--version":
+        // Read from the Info.plist embedded in the binary's __info_plist section.
+        print(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")
         exit(0)
     case "-s", "-I":
         if parsedMode != nil { argError = true }
